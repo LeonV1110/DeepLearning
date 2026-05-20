@@ -1,29 +1,37 @@
+"""
+Module to perform preprocessing on the data
+"""
 import h5py
 import pandas as pd
-import numpy as np
 from pathlib import Path
 from sklearn.preprocessing import StandardScaler
 
 INPUT = Path('data')
 OUTPUT = Path('preprocessed_data')
-"""
-Reads the file from the path, and transposes the data so the features are on the columns
-returns a Dataframe
-"""
+
 def read_file(file_path: Path) -> pd.DataFrame:
+    """
+    Reads the file from the path, and transposes the data so the features are on the columns
+    returns a Dataframe
+    """
     dataset_name = get_dataset_name(file_path)
     with h5py.File(file_path, 'r') as f:
         data = f.get(dataset_name)[()]
     return pd.DataFrame(data).T
 
 def get_dataset_name(file_name_with_dir: Path):
-
+    """
+    extracts the dataset name from the filepath
+    """
     filename_without_dir = file_name_with_dir.name
     temp = filename_without_dir.split('_')[:-1]
     dataset_name = '_'.join(temp)
     return dataset_name
 
 def preprocess_file(filename_path: Path, scaler = StandardScaler, drop_out_factor = 10):
+    """
+    applies the preprocessing pipeline to 1 file
+    """
     # Loading in the data
     initial = read_file(filename_path)
     #The preprocessing
@@ -38,8 +46,11 @@ def preprocess_file(filename_path: Path, scaler = StandardScaler, drop_out_facto
     preprecossed.to_csv(path)
 
 def main(data_type: str):
+    """
+    applies the preprocessing pipeline to all files in a dataset
+    """
     if not (data_type == 'Cross' or data_type == 'Intra'):
-        raise Exception()
+        raise ValueError("data_type must be either 'Cross' or 'Intra'")
 
     # Get filepaths of all files
     files = []
