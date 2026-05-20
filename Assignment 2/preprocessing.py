@@ -40,7 +40,7 @@ def preprocess_file(filename_path: Path, scaler = StandardScaler, drop_out_facto
     scaled_and_transposed = pd.DataFrame(scaler.transform(dropped_out),
                                         columns=dropped_out.columns,
                                         index = dropped_out.index)
-    preprecossed = scaled_and_transposed
+    preprecossed = scaled_and_transposed.reset_index(drop = True)
     #storing the preprocessed data
     path = (OUTPUT / filename_path.relative_to(INPUT)).with_suffix('.csv')
     path.parent.mkdir(parents=True, exist_ok=True)
