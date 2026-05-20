@@ -182,3 +182,4 @@ cython_debug/
 # Custom
 deepL/
 Assignment 2/data/
+Assignment 2/preprocessed_data/
