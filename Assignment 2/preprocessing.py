@@ -5,6 +5,7 @@ import h5py
 import pandas as pd
 from pathlib import Path
 from sklearn.preprocessing import StandardScaler
+import time
 
 INPUT = Path('data')
 OUTPUT = Path('preprocessed_data')
@@ -62,8 +63,10 @@ def main(data_type: str):
             files.append(filepath)
 
     # setup scaler
+    train_files = [f for f in files if 'train' in f.parts]
+    # Only fit the scaler on training data, but use it to scale all data as would be the case in a real world application
     scaler = StandardScaler()
-    for file in files:
+    for file in train_files:
         df = read_file(file)
         scaler.partial_fit(df)
     print('Scaler setup done')
@@ -75,5 +78,12 @@ def main(data_type: str):
 
 
 if __name__ == '__main__':
-    #main('Cross')
+    start = time.perf_counter()
+    main('Cross')
+    end = time.perf_counter()
+    print(f"Execution time: {end - start:.4f} seconds")
+
+    start = time.perf_counter()
     main('Intra')
+    end = time.perf_counter()
+    print(f"Execution time: {end - start:.4f} seconds")
