@@ -1,32 +1,35 @@
 from itertools import product
 import torch
 import torch.nn as nn
-
-from tcn_model import MEGTCN
-from train import train_one_epoch
-from evaluate import evaluate
 from torch.utils.data import Subset, DataLoader
 from sklearn.model_selection import StratifiedKFold
 import numpy as np
 
+from train import train_one_epoch
+from evaluate import evaluate
+
+
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-param_grid = {
-    "learning_rate": [1e-3, 5e-4],
-    "kernel_size": [3, 7, 15],
-    "dropout": [0.2, 0.5],
-    "hidden_channels": [32, 64],
-}
 
-
-def run_grid_search(train_loader, num_classes, epochs=15, batch_size=64, k_folds=4):
+def run_grid_search(model_class, param_grid, train_loader, num_classes, epochs=15, batch_size=64, k_folds=4,):
 
     keys = param_grid.keys()
-
     combinations = list(product(*param_grid.values()))
 
     best_acc = 0.0
     best_params = None
+
+    dataset = train_loader.dataset
+
+    # Extract labels once
+    labels = np.array([dataset[i][1] for i in range(len(dataset))])
+
+    skf = StratifiedKFold(
+        n_splits=k_folds,
+        shuffle=True,
+        random_state=42,
+    )
 
     for values in combinations:
 
@@ -37,14 +40,6 @@ def run_grid_search(train_loader, num_classes, epochs=15, batch_size=64, k_folds
         print(params)
         print("====================================")
 
-        # K-fold cross-validation with stratification
-        dataset = train_loader.dataset
-
-        # Get labels from dataset
-        labels = np.array([dataset[i][1] for i in range(len(dataset))])
-
-        skf = StratifiedKFold(n_splits=k_folds, shuffle=True, random_state=42)
-
         fold_val_accs = []
 
         for fold, (train_idx, val_idx) in enumerate(
@@ -52,17 +47,26 @@ def run_grid_search(train_loader, num_classes, epochs=15, batch_size=64, k_folds
         ):
 
             fold_train_loader = DataLoader(
-                Subset(dataset, train_idx), batch_size=batch_size, shuffle=True
-            )
-            val_loader = DataLoader(
-                Subset(dataset, val_idx), batch_size=batch_size, shuffle=False
+                Subset(dataset, train_idx),
+                batch_size=batch_size,
+                shuffle=True,
             )
 
-            model = MEGTCN(
+            val_loader = DataLoader(
+                Subset(dataset, val_idx),
+                batch_size=batch_size,
+                shuffle=False,
+            )
+
+            # Create model dynamically
+            model_params = {
+                k: v for k, v in params.items()
+                if k != "learning_rate"
+            }
+
+            model = model_class(
                 num_classes=num_classes,
-                hidden_channels=params["hidden_channels"],
-                kernel_size=params["kernel_size"],
-                dropout=params["dropout"],
+                **model_params
             ).to(DEVICE)
 
             criterion = nn.CrossEntropyLoss()
@@ -92,14 +96,17 @@ def run_grid_search(train_loader, num_classes, epochs=15, batch_size=64, k_folds
                 )
 
                 print(
-                    f"Fold {fold+1} | Epoch {epoch+1}/{epochs} | "
-                    f"Train Acc: {train_acc:.2f}% | Val Acc: {val_acc:.2f}%"
+                    f"Fold {fold+1} | "
+                    f"Epoch {epoch+1}/{epochs} | "
+                    f"Train Acc: {train_acc:.2f}% | "
+                    f"Val Acc: {val_acc:.2f}%"
                 )
 
             fold_val_accs.append(val_acc)
 
-        # average validation acc across folds
         mean_val_acc = float(np.mean(fold_val_accs))
+
+        print(f"\nMean CV Accuracy: {mean_val_acc:.2f}%")
 
         if mean_val_acc > best_acc:
             best_acc = mean_val_acc
@@ -110,5 +117,6 @@ def run_grid_search(train_loader, num_classes, epochs=15, batch_size=64, k_folds
     print("====================================")
 
     print(best_params)
-
     print(f"Best Accuracy: {best_acc:.2f}%")
+
+    return best_params, best_acc
