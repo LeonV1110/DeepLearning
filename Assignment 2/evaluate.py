@@ -1,7 +1,8 @@
 import torch
 
+
 def evaluate(model, loader, criterion, device):
-    
+
     model.eval()
 
     running_loss = 0.0
