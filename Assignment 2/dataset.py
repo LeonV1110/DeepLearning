@@ -8,26 +8,44 @@ from torch.utils.data import Dataset, DataLoader
 CLASS_NAMES = ["rest", "task_motor", "task_story_math", "task_working_memory"]
 CLASS_TO_IDX = {name: idx for idx, name in enumerate(CLASS_NAMES)}
 
+
 class MEGDataset(Dataset):
-    def __init__(self, file_paths, labels):
+    def __init__(self, file_paths, labels, person_ids=None, cache_data=True):
         self.file_paths = file_paths
         self.labels = labels
+        self.person_ids = person_ids
+        self.cache_data = cache_data
+        self._cache = {}
 
     def __len__(self):
         return len(self.file_paths)
 
     def __getitem__(self, idx):
 
-        x = pd.read_csv(self.file_paths[idx], index_col=0,).values.astype(np.float32)
+        if self.cache_data and idx in self._cache:
+            x = self._cache[idx]
+        else:
+            x = pd.read_csv(
+                self.file_paths[idx],
+                index_col=0,
+            ).values.astype(np.float32)
 
-        # CSV shape: (time, sensors)
-        x = x.T # Convert to: (sensors, time)
+            # CSV shape: (time, sensors)
+            x = x.T  # Convert to: (sensors, time)
+            x = torch.from_numpy(x)
 
-        x = torch.tensor(x)
+            if self.cache_data:
+                self._cache[idx] = x
+
         y = torch.tensor(self.labels[idx]).long()
 
+        if self.person_ids is not None:
+            person_id = torch.tensor(self.person_ids[idx]).long()
+            return x, y, person_id
+
         return x, y
-    
+
+
 def load_file_paths(data_dir):
 
     train_files = []
@@ -67,7 +85,7 @@ def load_file_paths(data_dir):
             else:
                 test_files.append(file_path)
                 test_labels.append(class_idx)
-    
+
     print(f"Loaded {len(train_files)} training samples")
     print(f"Loaded {len(test_files)} test samples")
     print(f"Class distribution in training: {np.bincount(train_labels)}")
@@ -75,23 +93,59 @@ def load_file_paths(data_dir):
 
     return (train_files, train_labels, test_files, test_labels)
 
-def create_dataloaders(data_dir, batch_size):
 
-    (train_files, train_labels, test_files, test_labels) = load_file_paths(data_dir)
+def create_dataloaders(
+    data_dir,
+    batch_size,
+    add_person_id=False,
+    cache_data=True,
+    num_workers=0,
+    pin_memory=None,
+):
 
-    train_dataset = MEGDataset(train_files, train_labels)
-    test_dataset = MEGDataset(test_files, test_labels)
+    train_files, train_labels, test_files, test_labels = load_file_paths(data_dir)
+
+    if add_person_id:
+        train_person_ids = [
+            int(os.path.splitext(f)[0].split("_")[-2]) for f in train_files
+        ]
+        test_person_ids = [
+            int(os.path.splitext(f)[0].split("_")[-2]) for f in test_files
+        ]
+    else:
+        train_person_ids = None
+        test_person_ids = None
+
+    train_dataset = MEGDataset(
+        train_files,
+        train_labels,
+        train_person_ids,
+        cache_data=cache_data,
+    )
+    test_dataset = MEGDataset(
+        test_files,
+        test_labels,
+        test_person_ids,
+        cache_data=cache_data,
+    )
+
+    if pin_memory is None:
+        pin_memory = torch.cuda.is_available()
 
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
         shuffle=True,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
     )
 
     test_loader = DataLoader(
         test_dataset,
         batch_size=batch_size,
         shuffle=False,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
     )
 
     print(f"Train batches: {len(train_loader)}")

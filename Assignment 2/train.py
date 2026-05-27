@@ -1,24 +1,44 @@
 import torch
 
+
+def _unpack_batch(batch):
+    if len(batch) == 2:
+        x, y = batch
+    else:
+        x, y, _ = batch
+
+    return x, y
+
+
 def train_one_epoch(model, loader, criterion, optimizer, device):
-    
+
     model.train()
+    use_amp = str(device).startswith("cuda")
 
     running_loss = 0.0
     correct = 0
     total = 0
 
-    for x, y in loader:
+    for batch in loader:
+        x, y = _unpack_batch(batch)
         x = x.to(device)
         y = y.to(device)
 
-        optimizer.zero_grad()
+        optimizer.zero_grad(set_to_none=True)
 
-        outputs = model(x)
-        loss = criterion(outputs, y)
+        if use_amp:
+            with torch.amp.autocast("cuda"):
+                outputs = model(x)
+                loss = criterion(outputs, y)
 
-        loss.backward()
-        optimizer.step()
+            loss.backward()
+            optimizer.step()
+        else:
+            outputs = model(x)
+            loss = criterion(outputs, y)
+
+            loss.backward()
+            optimizer.step()
 
         running_loss += loss.item()
 
