@@ -181,5 +181,5 @@ cython_debug/
 .cursorindexingignore
 # Custom
 deepL/
-Assignment 2/data/
-Assignment 2/preprocessed_data/
+*/data/
+*/preprocessed_data/
