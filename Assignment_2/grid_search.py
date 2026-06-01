@@ -17,8 +17,7 @@ def run_grid_search(model_class, param_grid, train_loader, num_classes, epochs=1
     keys = param_grid.keys()
     combinations = list(product(*param_grid.values()))
 
-    best_acc = 0.0
-    best_params = None
+    top_models = []
 
     dataset = train_loader.dataset
 
@@ -108,18 +107,31 @@ def run_grid_search(model_class, param_grid, train_loader, num_classes, epochs=1
 
         print(f"\nMean CV Accuracy: {mean_val_acc:.2f}%")
 
-        if mean_val_acc > best_acc:
-            best_acc = mean_val_acc
-            best_params = params
+        top_models.append(
+        {
+            "params": params.copy(),
+            "accuracy": mean_val_acc,
+        }
+    )
 
-    print("\n====================================")
-    print("BEST PARAMETERS")
-    print("====================================")
+    top_models = sorted(
+        top_models,
+        key=lambda x: x["accuracy"],
+        reverse=True,
+    )
 
-    print(best_params)
-    print(f"Best Accuracy: {best_acc:.2f}%")
+    top_models = top_models[:5]
 
-    return best_params, best_acc
+    print("\nTOP 5 CONFIGURATIONS")
+
+    for rank, result in enumerate(top_models, start=1):
+        print(
+            f"{rank}. "
+            f"Accuracy={result['accuracy']:.2f}% "
+            f"Params={result['params']}"
+        )
+
+    return top_models
 
 def run_person_grid_search(model_class, param_grid, person_splits, num_classes, epochs=15):
     """
@@ -130,8 +142,7 @@ def run_person_grid_search(model_class, param_grid, person_splits, num_classes, 
     keys = list(param_grid.keys())
     combinations = list(product(*param_grid.values()))
 
-    best_acc = 0.0
-    best_params = None
+    top_models = []
 
     print(f"Total configs: {len(combinations)}")
 
@@ -216,14 +227,28 @@ def run_person_grid_search(model_class, param_grid, person_splits, num_classes, 
 
         print(f"\nMean person CV Accuracy: {mean_acc:.2f}%")
 
-        if mean_acc > best_acc:
-            best_acc = mean_acc
-            best_params = params
+        top_models.append(
+        {
+            "params": params.copy(),
+            "accuracy": mean_acc,
+        }
+    )
 
-    print("\n====================================")
-    print("BEST PARAMETERS (PERSON-LEVEL CV)")
-    print("====================================")
-    print(best_params)
-    print(f"Best Accuracy: {best_acc:.2f}%")
+    top_models = sorted(
+        top_models,
+        key=lambda x: x["accuracy"],
+        reverse=True,
+    )
 
-    return best_params, best_acc
+    top_models = top_models[:5]
+
+    print("\nTOP 5 CONFIGURATIONS")
+
+    for rank, result in enumerate(top_models, start=1):
+        print(
+            f"{rank}. "
+            f"Accuracy={result['accuracy']:.2f}% "
+            f"Params={result['params']}"
+        )
+
+    return top_models
