@@ -69,7 +69,7 @@ class MEGTCN(nn.Module):
         self.block2 = TCNBlock(
             in_channels=hidden_channels,
             out_channels=hidden_channels * 2,
-            kernel_size=kernel_size,
+            kernel_size=kernel_size-2,
             dilation=2,
             dropout=dropout,
         )
@@ -79,7 +79,7 @@ class MEGTCN(nn.Module):
         self.block3 = TCNBlock(
             in_channels=hidden_channels * 2,
             out_channels=hidden_channels * 2,
-            kernel_size=kernel_size,
+            kernel_size=kernel_size-4,
             dilation=4,
             dropout=dropout,
         )

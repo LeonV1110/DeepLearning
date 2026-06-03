@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class CNNBaseline1D(nn.Module):
-    def __init__(self, num_classes=4, num_sensors=248, hidden_channels=32, dropout=0.3):
+    def __init__(self, num_classes=4, num_sensors=248, hidden_channels=32, kernel_size=7, dropout=0.3):
         super().__init__()
 
         self.network = nn.Sequential(
@@ -12,7 +12,7 @@ class CNNBaseline1D(nn.Module):
             nn.Conv1d(
                 in_channels=num_sensors,
                 out_channels=hidden_channels,
-                kernel_size=7,
+                kernel_size=kernel_size,
                 padding=3,
             ),
             nn.BatchNorm1d(hidden_channels),
@@ -22,7 +22,7 @@ class CNNBaseline1D(nn.Module):
             nn.Conv1d(
                 in_channels=hidden_channels,
                 out_channels=hidden_channels * 2,
-                kernel_size=5,
+                kernel_size=kernel_size-2,
                 padding=2,
             ),
             nn.BatchNorm1d(hidden_channels * 2),
