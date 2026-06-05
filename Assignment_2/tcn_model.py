@@ -50,14 +50,14 @@ class TCNBlock(nn.Module):
         return out
 
 class MEGTCN(nn.Module):
-    def __init__(self, num_classes, hidden_channels=64, kernel_size=7, dropout=0.2):
+    def __init__(self, num_classes, num_sensors=248, hidden_channels=64, kernel_size=7, dropout=0.2):
         super().__init__()
 
         # Input shape:
         # (batch, 248 sensors, time)
 
         self.block1 = TCNBlock(
-            in_channels=248,
+            in_channels=num_sensors,
             out_channels=hidden_channels,
             kernel_size=kernel_size,
             dilation=1,

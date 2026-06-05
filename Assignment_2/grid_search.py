@@ -75,6 +75,11 @@ def run_grid_search(model_class, param_grid, train_loader, num_classes, epochs=1
                 lr=params["learning_rate"],
             )
 
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optimizer,
+                T_max=epochs,
+            )
+
             print(f"Starting fold {fold+1}/{k_folds}")
 
             for epoch in range(epochs):
@@ -93,6 +98,8 @@ def run_grid_search(model_class, param_grid, train_loader, num_classes, epochs=1
                     criterion,
                     DEVICE,
                 )
+
+                scheduler.step()
 
                 print(
                     f"Fold {fold+1} | "
@@ -197,6 +204,11 @@ def run_person_grid_search(model_class, param_grid, person_splits, num_classes, 
                 lr=params["learning_rate"],
             )
 
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optimizer,
+                T_max=epochs,
+            )
+
             print(f"\nFold {fold+1}/{len(person_splits)} | Test person: {test_person_id}")
 
             for epoch in range(epochs):
@@ -215,6 +227,8 @@ def run_person_grid_search(model_class, param_grid, person_splits, num_classes, 
                     criterion,
                     DEVICE,
                 )
+
+                scheduler.step()
 
                 print(
                     f"Fold {fold+1} | Epoch {epoch+1}/{epochs} | "
