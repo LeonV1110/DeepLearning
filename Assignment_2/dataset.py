@@ -152,3 +152,32 @@ def create_dataloaders(
     print(f"Test batches: {len(test_loader)}")
 
     return train_loader, test_loader
+
+class SensorFilteredDataset(Dataset):
+    def __init__(self, base_dataset, sensor_indices=None):
+        """
+        base_dataset: your MEGDataset
+        sensor_indices: sensor indices to keep. If None, use all sensors
+        """
+        self.base = base_dataset
+        self.sensor_indices = sensor_indices
+
+    def __len__(self):
+        return len(self.base)
+
+    def __getitem__(self, idx):
+        sample = self.base[idx]
+
+        # handle (x, y) or (x, y, person_id)
+        if len(sample) == 2:
+            x, y = sample
+            extra = None
+        else:
+            x, y, extra = sample
+
+        if self.sensor_indices is not None:
+            x = x[self.sensor_indices, :]
+
+        if extra is None:
+            return x, y
+        return x, y, extra
