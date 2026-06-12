@@ -240,7 +240,7 @@ def run_person_grid_search(
                     DEVICE,
                 )
 
-                scheduler.step(val_loss)
+                scheduler.step()
 
                 print(
                     f"Fold {fold+1} | Epoch {epoch+1}/{epochs} | "
