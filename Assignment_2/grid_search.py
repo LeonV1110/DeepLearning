@@ -140,7 +140,14 @@ def run_grid_search(model_class, param_grid, train_loader, num_classes, epochs=1
 
     return top_models
 
-def run_person_grid_search(model_class, param_grid, person_splits, num_classes, epochs=15):
+def run_person_grid_search(
+    model_class,
+    param_grid,
+    person_splits,
+    num_classes,
+    epochs=15,
+    patience=8,
+):
     """
     Grid search using person-level cross-validation.
     Each fold = leave-one-person-out.
@@ -211,6 +218,10 @@ def run_person_grid_search(model_class, param_grid, person_splits, num_classes, 
 
             print(f"\nFold {fold+1}/{len(person_splits)} | Test person: {test_person_id}")
 
+            best_val_acc = -float("inf")
+            best_state_dict = None
+            bad_epochs = 0
+
             for epoch in range(epochs):
 
                 train_loss, train_acc = train_one_epoch(
@@ -235,7 +246,27 @@ def run_person_grid_search(model_class, param_grid, person_splits, num_classes, 
                     f"Train Acc: {train_acc:.2f}% | Val Acc: {val_acc:.2f}%"
                 )
 
-            fold_accuracies.append(val_acc)
+                if val_acc > best_val_acc:
+                    best_val_acc = val_acc
+                    best_state_dict = {
+                        key: value.detach().clone()
+                        for key, value in model.state_dict().items()
+                    }
+                    bad_epochs = 0
+                else:
+                    bad_epochs += 1
+
+                if bad_epochs >= patience:
+                    print(
+                        f"Early stopping at epoch {epoch + 1} after {patience} "
+                        f"non-improving epochs."
+                    )
+                    break
+
+            if best_state_dict is not None:
+                model.load_state_dict(best_state_dict)
+
+            fold_accuracies.append(best_val_acc)
 
         mean_acc = float(np.mean(fold_accuracies))
 
