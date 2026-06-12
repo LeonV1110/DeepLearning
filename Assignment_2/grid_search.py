@@ -218,7 +218,8 @@ def run_person_grid_search(
 
             print(f"\nFold {fold+1}/{len(person_splits)} | Test person: {test_person_id}")
 
-            best_val_acc = -float("inf")
+            best_val_loss = float("inf")
+            best_val_acc = 0.0
             best_state_dict = None
             bad_epochs = 0
 
@@ -239,14 +240,15 @@ def run_person_grid_search(
                     DEVICE,
                 )
 
-                scheduler.step()
+                scheduler.step(val_loss)
 
                 print(
                     f"Fold {fold+1} | Epoch {epoch+1}/{epochs} | "
-                    f"Train Acc: {train_acc:.2f}% | Val Acc: {val_acc:.2f}%"
+                    f"Train Acc: {train_acc:.2f}% | Val Acc: {val_acc:.2f}% | Val Loss: {val_loss:.4f}"
                 )
 
-                if val_acc > best_val_acc:
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
                     best_val_acc = val_acc
                     best_state_dict = {
                         key: value.detach().clone()
