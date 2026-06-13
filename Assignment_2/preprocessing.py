@@ -29,7 +29,7 @@ def get_dataset_name(file_name_with_dir: Path):
     dataset_name = '_'.join(temp)
     return dataset_name
 
-def preprocess_file(filename_path: Path, scaler = StandardScaler, drop_out_factor = 20):
+def preprocess_file(filename_path: Path, scaler = StandardScaler, drop_out_factor = 32):
     """
     applies the preprocessing pipeline to 1 file
     """
