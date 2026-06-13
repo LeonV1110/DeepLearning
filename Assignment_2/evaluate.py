@@ -4,6 +4,7 @@ import numpy as np
 from torch.utils.data import DataLoader, ConcatDataset, Subset
 from sklearn.model_selection import StratifiedKFold
 from dataset import SensorFilteredDataset
+from sklearn.metrics import f1_score, recall_score
 
 from train import train_one_epoch
 
@@ -17,7 +18,7 @@ def _unpack_batch(batch):
     return x, y
 
 
-def evaluate(model, loader, criterion, device):
+def evaluate(model, loader, criterion, device, return_preds=False):
 
     model.eval()
     use_amp = str(device).startswith("cuda")
@@ -25,6 +26,9 @@ def evaluate(model, loader, criterion, device):
     running_loss = 0.0
     correct = 0
     total = 0
+
+    y_true_all = []
+    y_pred_all = []
 
     with torch.no_grad():
         for batch in loader:
@@ -47,8 +51,17 @@ def evaluate(model, loader, criterion, device):
             total += y.size(0)
             correct += predicted.eq(y).sum().item()
 
+            if return_preds:
+                y_true_all.append(y.detach().cpu())
+                y_pred_all.append(predicted.detach().cpu())
+
     avg_loss = running_loss / len(loader)
     accuracy = 100.0 * correct / total
+
+    if return_preds:
+        y_true_all = torch.cat(y_true_all).numpy()
+        y_pred_all = torch.cat(y_pred_all).numpy()
+        return avg_loss, accuracy, y_true_all, y_pred_all
 
     return avg_loss, accuracy
 
@@ -217,7 +230,6 @@ def evaluate_top_models_person_cv(
     person_splits,
     num_classes,
     device,
-    epochs=20,
     n_runs=5,
 ):
     """
@@ -232,6 +244,7 @@ def evaluate_top_models_person_cv(
     for rank, model_info in enumerate(top_models, start=1):
 
         params = model_info["params"]
+        epochs = model_info["epochs"]
 
         print("\n" + "=" * 50)
         print(f"MODEL {rank}")
@@ -299,6 +312,11 @@ def evaluate_top_models_person_cv(
                     T_max=epochs,
                 )
 
+                best_val_loss = float("inf")
+                best_val_acc = 0.0
+                best_state_dict = None
+                bad_epochs = 0
+
                 for epoch in range(epochs):
 
                     train_one_epoch(
@@ -340,6 +358,7 @@ def evaluate_top_models_person_cv(
 
         results.append({
             "params": params,
+            "epochs": epochs,
             "mean_acc": mean_acc,
             "std_acc": std_acc,
             "best_acc": np.max(run_scores),
@@ -374,6 +393,7 @@ def evaluate_top_models_person_cv(
         )
 
         print(result["params"])
+        print("Epochs:", result["epochs"])
 
     return results
 
@@ -384,7 +404,6 @@ def compare_models(
     num_classes,
     device,
     sensor_scenarios=None,
-    epochs=20,
     n_runs=5,
 ):
 
@@ -398,6 +417,7 @@ def compare_models(
         name = config["name"]
         model_class = config["model_class"]
         params = config["params"]
+        epochs = config["epochs"]
 
         print("\n" + "=" * 50)
         print(f"MODEL: {name}")
@@ -412,6 +432,8 @@ def compare_models(
             print(f"SENSOR SET: {scenario_name}")
             print("-" * 50)
 
+            f1s = []
+            recalls = []
             accuracies = []
 
             for run in range(n_runs):
@@ -484,21 +506,36 @@ def compare_models(
 
                     scheduler.step()
 
-                test_loss, test_acc = evaluate(
+                test_loss, test_acc, y_true, y_pred = evaluate(
                     model,
                     test_loader,
                     criterion,
                     device,
+                    return_preds=True,
                 )
 
+                f1 = f1_score(y_true, y_pred, average="macro")
+                recall = recall_score(y_true, y_pred, average="macro")
+
                 accuracies.append(test_acc)
+                f1s.append(f1)
+                recalls.append(recall)
 
                 print(f"Run {run+1}/{n_runs} | Acc: {test_acc:.2f}%")
 
             model_results[scenario_name] = {
-                "mean": np.mean(accuracies),
-                "std": np.std(accuracies),
-                "runs": accuracies,
+                "acc_mean": np.mean(accuracies),
+                "acc_std": np.std(accuracies),
+
+                "f1_mean": np.mean(f1s),
+                "f1_std": np.std(f1s),
+
+                "recall_mean": np.mean(recalls),
+                "recall_std": np.std(recalls),
+
+                "acc_runs": accuracies,
+                "f1_runs": f1s,
+                "recall_runs": recalls,
             }
 
         results.append({
@@ -513,10 +550,12 @@ def compare_models(
 
     for r in results:
         print(f"\nMODEL: {r['model']}")
-        for scen, stats in r["results"].items():
+        for scenario, stats in r["results"].items():
             print(
-                f"  {scen}: "
-                f"{stats['mean']:.2f}% +- {stats['std']:.2f}%"
+                f"{scenario}: "
+                f"Acc={stats['acc_mean']:.2f}% +- {stats['acc_std']:.2f}% | "
+                f"F1={stats['f1_mean']:.3f} +- {stats['f1_std']:.3f} | "
+                f"Rec={stats['recall_mean']:.3f} +- {stats['recall_std']:.3f}"
             )
 
     return results
