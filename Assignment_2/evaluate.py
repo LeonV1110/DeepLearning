@@ -313,11 +313,6 @@ def evaluate_top_models_person_cv(
                     T_max=epochs,
                 )
 
-                best_val_loss = float("inf")
-                best_val_acc = 0.0
-                best_state_dict = None
-                bad_epochs = 0
-
                 for epoch in range(epochs):
 
                     train_one_epoch(
@@ -466,7 +461,7 @@ def compare_models(
 
                 model_params = {
                     k: v for k, v in params.items()
-                    if k not in ["learning_rate", "batch_size"]
+                    if k not in ["learning_rate", "batch_size", "weight_decay"]
                 }
 
                 sensor_count = (
@@ -489,6 +484,7 @@ def compare_models(
                 optimizer = torch.optim.Adam(
                     model.parameters(),
                     lr=params["learning_rate"],
+                    weight_decay=params.get("weight_decay", 0.0),
                 )
 
                 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
