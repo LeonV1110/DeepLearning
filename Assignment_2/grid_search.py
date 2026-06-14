@@ -60,7 +60,7 @@ def run_grid_search(model_class, param_grid, train_loader, num_classes, epochs=1
             # Create model dynamically
             model_params = {
                 k: v for k, v in params.items()
-                if k not in ["learning_rate", "batch_size"]
+                if k not in ["learning_rate", "batch_size", "weight_decay"]
             }
 
             model = model_class(
@@ -73,6 +73,7 @@ def run_grid_search(model_class, param_grid, train_loader, num_classes, epochs=1
             optimizer = torch.optim.Adam(
                 model.parameters(),
                 lr=params["learning_rate"],
+                weight_decay=params.get("weight_decay", 0.0),
             )
 
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -196,7 +197,7 @@ def run_person_grid_search(
             # Create model dynamically
             model_params = {
                 k: v for k, v in params.items()
-                if k not in ["learning_rate", "batch_size"]
+                if k not in ["learning_rate", "batch_size", "weight_decay"]
             }
 
             model = model_class(
@@ -209,6 +210,7 @@ def run_person_grid_search(
             optimizer = torch.optim.Adam(
                 model.parameters(),
                 lr=params["learning_rate"],
+                weight_decay=params.get("weight_decay", 0.0),
             )
 
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(

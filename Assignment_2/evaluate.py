@@ -279,7 +279,7 @@ def evaluate_top_models_person_cv(
                 model_params = {
                     k: v
                     for k, v in params.items()
-                    if k not in ["learning_rate", "batch_size"]
+                    if k not in ["learning_rate", "batch_size", "weight_decay"]
                 }
 
                 model = model_class(
@@ -292,6 +292,7 @@ def evaluate_top_models_person_cv(
                 optimizer = torch.optim.Adam(
                     model.parameters(),
                     lr=params["learning_rate"],
+                    weight_decay=params.get("weight_decay", 0.0),
                 )
 
                 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
