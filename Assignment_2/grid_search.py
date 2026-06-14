@@ -223,7 +223,9 @@ def run_person_grid_search(
             best_val_loss = float("inf")
             best_val_acc = 0.0
             best_state_dict = None
+            best_epoch = epochs
             bad_epochs = 0
+            fold_best_epochs = []
 
             for epoch in range(epochs):
 
@@ -252,6 +254,7 @@ def run_person_grid_search(
                 if val_loss < best_val_loss:
                     best_val_loss = val_loss
                     best_val_acc = val_acc
+                    best_epoch = epoch + 1
                     best_state_dict = {
                         key: value.detach().clone()
                         for key, value in model.state_dict().items()
@@ -271,8 +274,10 @@ def run_person_grid_search(
                 model.load_state_dict(best_state_dict)
 
             fold_accuracies.append(best_val_acc)
+            fold_best_epochs.append(best_epoch)
 
         mean_acc = float(np.mean(fold_accuracies))
+        mean_epoch = int(np.round(np.mean(fold_best_epochs)))
 
         print(f"\nMean person CV Accuracy: {mean_acc:.2f}%")
 
@@ -280,6 +285,7 @@ def run_person_grid_search(
         {
             "params": params.copy(),
             "accuracy": mean_acc,
+            "epochs": mean_epoch,
         }
     )
 
