@@ -30,7 +30,6 @@ class SensorEncoder(nn.Module):
 
 
 class SensorAttentionBlock(nn.Module):
-    """A lightweight self-attention block over sensor nodes."""
 
     def __init__(self, input_dim: int, num_heads: int = 1, dropout: float = 0.1):
         super().__init__()
@@ -74,8 +73,7 @@ class SensorAttentionBlock(nn.Module):
         return self.activation(out)
 
 
-class CNNBaseline1D(nn.Module):
-    """Original CNN baseline plus a tiny graph-attention residual branch."""
+class MEGGAN(nn.Module):
 
     def __init__(
         self,
