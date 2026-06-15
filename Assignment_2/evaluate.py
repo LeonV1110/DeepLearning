@@ -401,6 +401,7 @@ def compare_models(
     num_classes,
     device,
     sensor_scenarios=None,
+    epochs=20,
     n_runs=5,
 ):
 
@@ -414,7 +415,6 @@ def compare_models(
         name = config["name"]
         model_class = config["model_class"]
         params = config["params"]
-        epochs = config["epochs"]
 
         print("\n" + "=" * 50)
         print(f"MODEL: {name}")
