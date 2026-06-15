@@ -135,7 +135,7 @@ def evaluate_top_models_cv(
                 model_params = {
                     k: v
                     for k, v in params.items()
-                    if k not in ["learning_rate", "batch_size"]
+                    if k not in ["learning_rate", "batch_size", "weight_decay"]
                 }
 
                 model = model_class(
@@ -148,6 +148,7 @@ def evaluate_top_models_cv(
                 optimizer = torch.optim.Adam(
                     model.parameters(),
                     lr=params["learning_rate"],
+                    weight_decay=params.get("weight_decay", 0.0),
                 )
 
                 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -400,6 +401,7 @@ def compare_models(
     num_classes,
     device,
     sensor_scenarios=None,
+    epochs=20,
     n_runs=5,
 ):
 
@@ -413,7 +415,6 @@ def compare_models(
         name = config["name"]
         model_class = config["model_class"]
         params = config["params"]
-        epochs = config["epochs"]
 
         print("\n" + "=" * 50)
         print(f"MODEL: {name}")
