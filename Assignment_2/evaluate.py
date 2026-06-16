@@ -432,6 +432,8 @@ def compare_models(
             f1s = []
             recalls = []
             accuracies = []
+            y_preds = []
+            y_trues = []
 
             for run in range(n_runs):
 
@@ -511,6 +513,8 @@ def compare_models(
                     device,
                     return_preds=True,
                 )
+                y_preds.append(y_pred)
+                y_trues.append(y_true)
 
                 f1 = f1_score(y_true, y_pred, average="macro")
                 recall = recall_score(y_true, y_pred, average="macro")
@@ -534,6 +538,9 @@ def compare_models(
                 "acc_runs": accuracies,
                 "f1_runs": f1s,
                 "recall_runs": recalls,
+
+                "y_preds": y_preds,
+                "y_trues": y_trues,
             }
 
         results.append({
