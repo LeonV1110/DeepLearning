@@ -135,7 +135,7 @@ class MEGGAN(nn.Module):
         )
         nn.init.zeros_(self.graph_head[-1].weight)
         nn.init.zeros_(self.graph_head[-1].bias)
-        self.graph_gate = nn.Parameter(torch.tensor(-3.0))
+        self.graph_gate = nn.Parameter(torch.tensor(0.0))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if x.ndim != 3:

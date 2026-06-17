@@ -177,8 +177,6 @@ class MHEGAN(nn.Module):
         dropout:       Dropout probability throughout.
         graph_hidden:  Node embedding dimension (defaults to hidden_channels).
         num_heads:     Number of attention heads in SensorAttentionBlock.
-        sensor_pos:    Optional (num_sensors, 3) tensor of sensor xyz positions.
-                       When provided, attention is biased toward nearby sensors.
     """
 
     def __init__(
@@ -302,13 +300,5 @@ class MHEGAN(nn.Module):
 
         Shape: (batch, num_heads, num_sensors, num_sensors)
         Useful for visualising which sensor pairs the model attends to.
-
-        Example usage:
-            model.eval()
-            with torch.no_grad():
-                _ = model(x_batch)
-            attn = model.get_attention_weights()  # (B, H, N, N)
-            # Average over batch and heads for a single 248x248 map:
-            attn_map = attn.mean(dim=(0, 1)).numpy()
         """
         return self.sensor_attention.last_attn
